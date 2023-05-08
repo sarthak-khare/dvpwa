@@ -1,17 +1,11 @@
-import hashlib
-from typing import NamedTuple, Optional
+from typing import Optional, NamedTuple
 
-from aiopg import Connection
+from aiopg.connection import Connection
 
 
-class User(NamedTuple):
+class Student(NamedTuple):
     id: int
-    first_name: str
-    middle_name: Optional[str]
-    last_name: str
-    username: str
-    pwd_hash: str
-    is_admin: bool
+    name: str
 
     @classmethod
     def from_raw(cls, raw: tuple):
@@ -21,23 +15,30 @@ class User(NamedTuple):
     async def get(conn: Connection, id_: int):
         async with conn.cursor() as cur:
             await cur.execute(
-                'SELECT id, first_name, middle_name, last_name, '
-                'username, pwd_hash, is_admin FROM users WHERE id = %s',
+                'SELECT id, name FROM students WHERE id = %s',
                 (id_,),
             )
-            return User.from_raw(await cur.fetchone())
+            r = await cur.fetchone()
+            return Student.from_raw(r)
 
     @staticmethod
-    async def get_by_username(conn: Connection, username: str):
+    async def get_many(conn: Connection, limit: Optional[int] = None,
+                       offset: Optional[int] = None):
+        q = 'SELECT id, name FROM students'
+        params = {}
+        if limit is not None:
+            q += ' LIMIT %(limit)s'
+            params['limit'] = limit
+        if offset is not None:
+            q += ' OFFSET %(offset)s'
+            params['offset'] = offset
         async with conn.cursor() as cur:
-            await cur.execute(
-                'SELECT id, first_name, middle_name, last_name, '
-                'username, pwd_hash, is_admin FROM users WHERE username = %s',
-                (username,),
-            )
-            return User.from_raw(await cur.fetchone())
+            await cur.execute(q, params)
+            results = await cur.fetchall()
+            return [Student.from_raw(r) for r in results]
 
-    def check_password(self, password: str):
-        salted_password = password.encode('utf-8') + self.pwd_salt.encode('utf-8')
-        hashed_password = hashlib.sha256(salted_password).hexdigest()
-        return self.pwd_hash == hashed_password
+    @staticmethod
+    async def create(conn: Connection, name: str):
+        q = "INSERT INTO students (name) VALUES (%(name)s)"
+        async with conn.cursor() as cur:
+            await cur.execute(q, {'name': name})
