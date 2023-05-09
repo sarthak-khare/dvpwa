@@ -47,7 +47,6 @@ async def index(request: Request):
             'errors': errors,
             'auth_user': auth_user}
 
-
 @template('students.jinja2')
 async def students(request: Request):
     app: Application = request.app
