@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 from itertools import groupby
+from html import escape
 
 from aiohttp.web import Request, HTTPFound, Application
 from aiohttp.web_exceptions import HTTPNotFound, HTTPForbidden
@@ -51,8 +52,15 @@ async def index(request: Request):
             auth_user = user
         else:
             errors.append('Invalid username or password')
-    return {'last_visited': last_visited,
-            'errors': errors,
+
+    # Sanitize the last_visited value to prevent XSS attacks
+    last_visited_sanitized = escape(last_visited)
+
+    # Sanitize the error messages to prevent XSS attacks
+    errors_sanitized = [escape(error) for error in errors]
+
+    return {'last_visited': last_visited_sanitized,
+            'errors': errors_sanitized,
             'auth_user': auth_user}
 
 
