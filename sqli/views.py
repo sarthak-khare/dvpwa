@@ -38,8 +38,11 @@ async def index(request: Request):
             data = EVALUATE_SCHEMA.check(await request.post())
         except DataError as e:
             errors.append(str(e))
-            return {'last_visited': escape(last_visited),
-                    'errors': [escape(error) for error in errors],
+            last_visited = escape(last_visited)
+            errors = [escape(error) for error in errors]
+            auth_user = escape(auth_user)
+            return {'last_visited': last_visited,
+                    'errors': errors,
                     'auth_user': auth_user}
 
         username = escape(data['username'])
@@ -59,9 +62,11 @@ async def index(request: Request):
     # Sanitize the error messages to prevent XSS attacks
     errors_sanitized = [escape(error) for error in errors]
 
+    auth_user_sanitized = escape(auth_user)
+
     return {'last_visited': last_visited_sanitized,
             'errors': errors_sanitized,
-            'auth_user': auth_user}
+            'auth_user': auth_user_sanitized}
 
 
 
