@@ -38,12 +38,12 @@ async def index(request: Request):
             data = EVALUATE_SCHEMA.check(await request.post())
         except DataError as e:
             errors.append(str(e))
-            return {'last_visited': last_visited,
-                    'errors': errors,
+            return {'last_visited': escape(last_visited),
+                    'errors': [escape(error) for error in errors],
                     'auth_user': auth_user}
 
-        username = data['username']
-        password = data['password']
+        username = escape(data['username'])
+        password = escape(data['password'])
 
         async with app['db'].acquire() as conn:
             user = await User.get_by_username(conn, username)
